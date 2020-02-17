@@ -3,7 +3,9 @@ import json
 import os
 import random
 
+from player import Player
 from room import Room
+from team import Team
 from util import format_time
 
 script_path = os.path.dirname(os.path.realpath(__file__))
@@ -38,40 +40,59 @@ def create_room():
     return redirect(url_for('show_room', room_id=new_room.id))
 
 
-@app.route('/room/<room_id>/end_turn', methods=['PUT'])
+@app.route('/room/<room_id>', methods=['PUT'])
 def end_turn(room_id):
     room = next((r for r in rooms if r.id == room_id), None)
     if not room:
         abort(404)
 
-    status = json.loads(request.data)['status']
+    parsed_req = json.loads(request.data)
 
-    if status == 'correct':
-        room.game.set_correct()
-    else:
-        room.game.set_incorrect()
+    if 'answer_status' in parsed_req: 
+        if parsed_req['answer_status'] == 'correct':
+            room.game.set_correct()
+        else:
+            room.game.set_incorrect()
+    if 'word' in parsed_req:
+        room.game.set_word(parsed_req['word'])
+    if 'teams' in parsed_req:
+        room.start_game(parsed_req['teams'])
     
     return redirect(url_for('show_room', room_id=room_id))
 
 
-@app.route('/room/<room_id>/set_word', methods=['PUT'])
-def set_word(room_id):
+@app.route('/room/<room_id>/add_player', methods=['PUT'])
+def add_player(room_id):
     room = next((r for r in rooms if r.id == room_id), None)
     if not room:
         abort(404)
-    
-    word = json.loads(request.data)['word']
 
-    room.game.set_word(word)
+    parsed_req = json.loads(request.data)
 
-    return redirect(url_for('show_room', room_id=room_id))
+    player = Player(parsed_req['name'])
+    try:
+        room.add_player(player)
+    except Exception as e:
+        return {'error': str(e)}, 422
 
+    return {'name': player.name, 'id': player.id}
 
 @app.route('/word', methods=['GET'])
 def get_word():
     with open(word_file_path, 'r') as f:
         words = (x.strip() for x in f.readlines())
         return {'word': random.choice(words)}
+
+
+@app.route('/room/<room_id>', methods=['DELETE'])
+def delete_room(room_id):
+    room = next((r for r in rooms if r.id == room_id), None)
+    if not room:
+        abort(404)
+
+    rooms.remove(room)
+
+    return {'status': 'success'}
 
 
 @app.errorhandler(404)

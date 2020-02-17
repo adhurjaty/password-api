@@ -7,6 +7,15 @@ from room import Room
 import server
 from test_logic import make_sample_game
 
+
+def add_player(app, name, room_id):
+    data = json.dumps(dict(name=name))
+    response = app.put(f'/room/{room_id}/add_player', data=data,
+        follow_redirects=True)
+    parsed = json.loads(response.data)
+    return parsed['id']
+    
+
 class ServerTests(unittest.TestCase):
     def setUp(self):
         app = server.app
@@ -70,9 +79,9 @@ class ServerTests(unittest.TestCase):
         room.game = make_sample_game()
         server.rooms = [room]
 
-        data = json.dumps(dict(status='correct'))
+        data = json.dumps(dict(answer_status='correct'))
 
-        response = self.app.put('/room/dddd/end_turn', data=data, follow_redirects=True)
+        response = self.app.put('/room/dddd', data=data, follow_redirects=True)
         parsed = json.loads(response.data)
 
         score = parsed['game']['score']
@@ -88,9 +97,9 @@ class ServerTests(unittest.TestCase):
         room.game = make_sample_game()
         server.rooms = [room]
 
-        data = json.dumps(dict(status='incorrect'))
+        data = json.dumps(dict(answer_status='incorrect'))
 
-        response = self.app.put('/room/dddd/end_turn', data=data, follow_redirects=True)
+        response = self.app.put('/room/dddd', data=data, follow_redirects=True)
         parsed = json.loads(response.data)
 
         score = parsed['game']['score']
@@ -110,9 +119,9 @@ class ServerTests(unittest.TestCase):
         room.game.rounds[-1].turn = 0
         server.rooms = [room]
 
-        data = json.dumps(dict(status='incorrect'))
+        data = json.dumps(dict(answer_status='incorrect'))
 
-        response = self.app.put('/room/dddd/end_turn', data=data, follow_redirects=True)
+        response = self.app.put('/room/dddd', data=data, follow_redirects=True)
         parsed = json.loads(response.data)
 
         score = parsed['game']['score']
@@ -133,7 +142,51 @@ class ServerTests(unittest.TestCase):
         word = 'refrigerator'
         data = json.dumps(dict(word=word))
 
-        response = self.app.put('/room/dddd/set_word', data=data, follow_redirects=True)
+        response = self.app.put('/room/dddd', data=data, follow_redirects=True)
         parsed = json.loads(response.data)
 
         self.assertEqual(parsed['game']['word'], word)
+
+
+    def test_add_player(self):
+        response = self.app.post('/room', follow_redirects=True)
+
+        parsed = json.loads(response.data)
+        room_id = parsed['id']
+
+        data = json.dumps(dict(name='Anil'))
+        response = self.app.put(f'/room/{room_id}/add_player', data=data,
+            follow_redirects=True)
+
+        parsed = json.loads(response.data)
+
+        self.assertTrue('id' in parsed)
+
+        self.assertEqual(len(server.rooms[0].players), 1)
+
+    def test_start_game(self):
+        response = self.app.post('/room', follow_redirects=True)
+
+        parsed = json.loads(response.data)
+        room_id = parsed['id']
+
+        anil_id = add_player(self.app, 'Anil', room_id)
+        jordan_id = add_player(self.app, 'Jordan', room_id)
+        york_id = add_player(self.app, 'York', room_id)
+        alex_id = add_player(self.app, 'Alex', room_id)
+
+        teams = [
+            [anil_id, jordan_id],
+            [york_id, alex_id]
+        ]
+        
+        data = json.dumps(dict(teams=teams))
+        response = self.app.put(f'/room/{room_id}', data=data,
+            follow_redirects=True)
+        
+        parsed = json.loads(response.data)
+
+        resp_teams = parsed['game']['teams']
+        
+        self.assertEqual(parsed['id'], room_id)
+        self.assertListEqual(resp_teams, ['Anil + Jordan', 'York + Alex'])
