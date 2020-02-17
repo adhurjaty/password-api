@@ -23,4 +23,5 @@ class ServerTests(unittest.TestCase):
     def test_find_missing_room(self):
         response = self.app.get('/room/asdf', follow_redirects=True)
         self.assertEqual(response.status_code, 404)
-        
+
+

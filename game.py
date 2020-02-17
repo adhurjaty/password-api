@@ -30,17 +30,22 @@ class Game(object):
             return random.choice(words)
 
     def get_score(self):
-        
+        scores = [0, 0]
+        for round in self.rounds[:-1]:
+            scores[round.turn] += round.score
+        return scores
 
     def to_json(self):
+        current_round = self.rounds[-1]
+
         return {
-            'rounds': [
-                r.to_json() for r in self.rounds
-            ],
+            'word': current_round.word,
+            'turn': current_round.turn,
+            'pending_score': current_round.score,
             'teams': [
                 t.get_name() for t in self.teams
             ],
-            'score': 
+            'score': self.get_score()
         }
 
     

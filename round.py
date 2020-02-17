@@ -10,3 +10,10 @@ class Round:
     def switch_turn(self):
         self.turn = int(not self.turn)
         self.score -= 1
+
+    def to_json(self):
+        return {
+            'word': self.word,
+            'turn': self.turn,
+            'score': self.score
+        }
