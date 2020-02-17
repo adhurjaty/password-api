@@ -23,6 +23,9 @@ class Game(object):
 
         round = Round(word, team_up)
         self.rounds.append(round)
+
+    def has_started(self):
+        return len(self.rounds) > 0
         
     def generate_word(self):
         with open(word_file_path, 'r') as f:
