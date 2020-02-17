@@ -3,9 +3,11 @@ class Round:
     turn = 0
     score = 6
 
-    def __init__(self, word, turn):
-        self.word = word
+    def __init__(self, turn):
         self.turn = turn
+
+    def set_word(self, word):
+        self.word = word
 
     def switch_turn(self):
         self.turn = int(not self.turn)

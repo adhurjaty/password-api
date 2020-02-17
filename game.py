@@ -1,11 +1,4 @@
-import os
-import random
-
 from round import Round
-
-script_path = os.path.dirname(os.path.realpath(__file__))
-word_file_path = os.path.join(script_path, 'common-nouns.txt')
-
 
 class Game(object):
     rounds = []
@@ -16,27 +9,27 @@ class Game(object):
     def __init__(self, teams):
         self.teams = teams
 
-    def start_round(self, word):
+    def start_round(self):
         team_up = self.team_order[self.order_idx]
         self.order_idx += 1
         self.order_idx = self.order_idx % 4
 
-        round = Round(word, team_up)
+        round = Round(team_up)
         self.rounds.append(round)
 
     def has_started(self):
         return len(self.rounds) > 0
         
-    def generate_word(self):
-        with open(word_file_path, 'r') as f:
-            words = (x.strip() for x in f.readlines())
-            return random.choice(words)
-
     def get_score(self):
         scores = [0, 0]
         for round in self.rounds[:-1]:
             scores[round.turn] += round.score
         return scores
+
+    def set_word(self, word):
+        current_round = self.rounds[-1]
+
+        current_round.set_word(word)
 
     def to_json(self):
         current_round = self.rounds[-1]
@@ -50,5 +43,16 @@ class Game(object):
             ],
             'score': self.get_score()
         }
+
+    def set_correct(self):
+        self.start_round()
+
+    def set_incorrect(self):
+        current_round = self.rounds[-1]
+        current_round.switch_turn()
+
+        if current_round.score == 0:
+            self.start_round()
+        
 
     

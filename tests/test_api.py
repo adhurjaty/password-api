@@ -19,7 +19,7 @@ class ServerTests(unittest.TestCase):
         response = self.app.get('/fake_endpoint', follow_redirects=True)
         self.assertEqual(response.status_code, 404)
         resp_dict = json.loads(response.data)
-        self.assertEqual(resp_dict['Error'], 'page not found')
+        self.assertEqual(resp_dict['error'], 'page not found')
 
     def test_find_room(self):
         room = Room()
@@ -63,4 +63,77 @@ class ServerTests(unittest.TestCase):
         parsed = json.loads(response.data)
         self.assertTrue('id' in parsed)
 
+    def test_log_correct(self):
+        room = Room()
+        room.id = 'dddd'
+        room.created_time = datetime(2020, 1, 21)
+        room.game = make_sample_game()
+        server.rooms = [room]
 
+        data = json.dumps(dict(status='correct'))
+
+        response = self.app.put('/room/dddd/end_turn', data=data, follow_redirects=True)
+        parsed = json.loads(response.data)
+
+        score = parsed['game']['score']
+        pending = parsed['game']['pending_score']
+
+        self.assertListEqual(score, [7, 17])
+        self.assertEqual(pending, 6)
+
+    def test_log_incorrect(self):
+        room = Room()
+        room.id = 'dddd'
+        room.created_time = datetime(2020, 1, 21)
+        room.game = make_sample_game()
+        server.rooms = [room]
+
+        data = json.dumps(dict(status='incorrect'))
+
+        response = self.app.put('/room/dddd/end_turn', data=data, follow_redirects=True)
+        parsed = json.loads(response.data)
+
+        score = parsed['game']['score']
+        pending = parsed['game']['pending_score']
+        turn = parsed['game']['turn']
+
+        self.assertListEqual(score, [7, 11])
+        self.assertEqual(pending, 5)
+        self.assertEqual(turn, 0)
+
+    def test_incorrect_end_round(self):
+        room = Room()
+        room.id = 'dddd'
+        room.created_time = datetime(2020, 1, 21)
+        room.game = make_sample_game()
+        room.game.rounds[-1].score = 1
+        room.game.rounds[-1].turn = 0
+        server.rooms = [room]
+
+        data = json.dumps(dict(status='incorrect'))
+
+        response = self.app.put('/room/dddd/end_turn', data=data, follow_redirects=True)
+        parsed = json.loads(response.data)
+
+        score = parsed['game']['score']
+        pending = parsed['game']['pending_score']
+        turn = parsed['game']['turn']
+
+        self.assertListEqual(score, [7, 11])
+        self.assertEqual(pending, 6)
+        self.assertEqual(turn, 0)
+
+    def test_set_word(self):
+        room = Room()
+        room.id = 'dddd'
+        room.created_time = datetime(2020, 1, 21)
+        room.game = make_sample_game()
+        server.rooms = [room]
+
+        word = 'refrigerator'
+        data = json.dumps(dict(word=word))
+
+        response = self.app.put('/room/dddd/set_word', data=data, follow_redirects=True)
+        parsed = json.loads(response.data)
+
+        self.assertEqual(parsed['game']['word'], word)

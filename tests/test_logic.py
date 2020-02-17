@@ -7,7 +7,9 @@ from round import Round
 from team import Team
 
 def make_sample_game():
-    rounds = [Round('blah', 0) for _ in range(5)]
+    rounds = [Round(0) for _ in range(5)]
+    for r in rounds:
+        r.set_word('blah')
     players = [
         Player(uuid.uuid4(), 'Jordan'),
         Player(uuid.uuid4(), 'York'),
