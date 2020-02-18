@@ -38,4 +38,7 @@ class Room:
 
         self.players.append(player)
 
+    def has_player(self, player_id):
+        return any(p.id == player_id for p in self.players)
+
 

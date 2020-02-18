@@ -16,9 +16,9 @@ app = Flask(__name__)
 rooms = []
 
 
-@app.route('/room/<room_id>')
-def show_room(room_id):
-    room = next((r for r in rooms if r.id == room_id), None)
+@app.route('/room/<player_id>')
+def show_room(player_id):
+    room = next((r for r in rooms if r.has_player(player_id)), None)
     if not room:
         abort(404)
 
@@ -28,7 +28,7 @@ def show_room(room_id):
     }
 
     if room.game and room.game.has_started():
-        resp.update({'game': room.game.to_json()})
+        resp.update({'game': room.game.to_json(player_id)})
 
     return resp
     
@@ -37,12 +37,23 @@ def show_room(room_id):
 def create_room():
     new_room = Room()
     rooms.append(new_room)
-    return redirect(url_for('show_room', room_id=new_room.id))
+
+    parsed_req = json.loads(request.data)
+    player = Player(parsed_req['name'])
+    try:
+        new_room.add_player(player)
+    except Exception as e:
+        return {'error': str(e)}, 422
+
+    return {
+        'id': new_room.id,
+        'player_id': player.id
+    }
 
 
-@app.route('/room/<room_id>', methods=['PUT'])
-def end_turn(room_id):
-    room = next((r for r in rooms if r.id == room_id), None)
+@app.route('/room/<player_id>', methods=['PUT'])
+def end_turn(player_id):
+    room = next((r for r in rooms if r.has_player(player_id)), None)
     if not room:
         abort(404)
 
@@ -58,7 +69,7 @@ def end_turn(room_id):
     if 'teams' in parsed_req:
         room.start_game(parsed_req['teams'])
     
-    return redirect(url_for('show_room', room_id=room_id))
+    return redirect(url_for('show_room', player_id=player_id))
 
 
 @app.route('/room/<room_id>/add_player', methods=['PUT'])

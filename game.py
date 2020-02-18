@@ -31,11 +31,10 @@ class Game(object):
 
         current_round.set_word(word)
 
-    def to_json(self):
+    def to_json(self, player_id):
         current_round = self.rounds[-1]
 
-        return {
-            'word': current_round.word,
+        data = {
             'turn': current_round.turn,
             'pending_score': current_round.score,
             'teams': [
@@ -44,7 +43,13 @@ class Game(object):
             'score': self.get_score()
         }
 
+        if self.is_master(player_id):
+            data.update(dict(word=current_round.word))
+
+        return data
+
     def set_correct(self):
+        self.switch_guessers()
         self.start_round()
 
     def set_incorrect(self):
@@ -52,7 +57,12 @@ class Game(object):
         current_round.switch_turn()
 
         if current_round.score == 0:
+            self.switch_guessers()
             self.start_round()
-        
 
-    
+    def switch_guessers(self):
+        for team in self.teams:
+            team.switch()
+        
+    def is_master(self, player_id):
+        return any(team.is_master(player_id) for team in self.teams)    

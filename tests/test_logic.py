@@ -11,10 +11,10 @@ def make_sample_game():
     for r in rounds:
         r.set_word('blah')
     players = [
-        Player(uuid.uuid4(), 'Jordan'),
-        Player(uuid.uuid4(), 'York'),
-        Player(uuid.uuid4(), 'Brittany'),
-        Player(uuid.uuid4(), 'Airin'),
+        Player('Jordan'),
+        Player('York'),
+        Player('Brittany'),
+        Player('Airin'),
     ]
     teams = [
         Team(players[:2]),
@@ -53,7 +53,8 @@ class LogicTest(unittest.TestCase):
     def test_get_game_json(self):
         game = make_sample_game()
 
-        obj = game.to_json()
+        player = game.teams[0].players[0]
+        obj = game.to_json(player.id)
 
         self.assertDictEqual(obj, {
             'word': 'blah',
@@ -61,7 +62,7 @@ class LogicTest(unittest.TestCase):
             'pending_score': 6,
             'teams': [
                 'Jordan + York',
-                'Airin + Brittany'
+                'Brittany + Airin'
             ],
             'score': [7, 11]
         })
